@@ -13,11 +13,11 @@ provider "aws" {
 ###################################################################### Bucket ####################################################################################
 
 resource "aws_s3_bucket" "b" {
-  bucket = "data-fileS3-projeto-terraform"
+  bucket = "data-fileS3-projeto-${var.bucket_user}"
   force_destroy = var.force_destroy
 
   tags = {
-    Name  = "Bucket para  armazenar input e executar lambda"
+    Name  = "Bucket para armazenar input e executar lambda"
     Turma = "terraform0-009-983"
   }
 }
@@ -41,16 +41,6 @@ resource "aws_subnet" "private-subnet" {
 
   tags = {
     Name = "Subnet ${count.index + 1} - Projeto Terraform"
-  }
-}
-resource "aws_subnet" "private-subnet" {
-  count             = var.subnet_count
-  vpc_id            = aws_vpc.dev-vpc.id
-  cidr_block        = var.subnet_cidr_block[count.index] # "172.16.1.0/25" 172.16.1.48 até 172.16.1.64 
-  availability_zone = var.subnet_availability_zone[count.index]
-
-  tags = {
-    Name = "Subnet ${count.index + 1} - DE-OP-009"
   }
 }
 
@@ -103,13 +93,12 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 # Criando  uma role p/ o lambda.
-
 resource "aws_iam_role" "iam_for_lambda" {
   name               = "iam_para_o_lambda"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
-# Copy da permissão de log-stream da aula paravalidar funcionamento da lambda no cloudwatch
+# Copy da permissão de log-stream da aula para validar funcionamento da lambda no cloudwatch
 resource "aws_iam_policy" "function_logging_policy" {
   name   = "function-logging-policy"
   policy = jsonencode({
@@ -127,10 +116,38 @@ resource "aws_iam_policy" "function_logging_policy" {
   })
 }
 
+# Permissão para leitura do bucket
+resource "aws_iam_policy" "function_lambda_policy" {
+  name = "function_lambda_policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    "Statement" = [
+      {
+        Action   = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Effect   = "Allow"
+        Resource = [
+          "${aws_s3_bucket.b.arn}",
+          "${aws_s3_bucket.b.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
 # Adicionando a policy anterior do log-stream
 resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
   role = aws_iam_role.iam_for_lambda.id
   policy_arn = aws_iam_policy.function_logging_policy.arn
+}
+
+# Adicionando a policy anterior da leitura do bucket
+resource "aws_iam_role_policy_attachment" "function_lambda_policy_attachment" {
+  role = aws_iam_role.iam_for_lambda.id
+  policy_arn = aws_iam_policy.function_lambda_policy.arn
 }
 
 # Zipar 1 arquivo .py para subir no lambda
@@ -147,10 +164,8 @@ resource "aws_lambda_function" "lambda_func" {
   handler       = "lambda_function.lambda_metodo"
 
   source_code_hash = "${data.archive_file.lambda.output_base64sha256}"
-
   runtime = var.versao_python
 }
-
 
 # Permitir nitificações entre s3 e lambda
 resource "aws_s3_bucket_notification" "aws_lambda_trigger" {
