@@ -1,17 +1,35 @@
 import pandas as pd
+import re
+import boto3
+
+bucket = "yourbucket"
+file_name = "your_file.csv"
+
+s3 = boto3.client('s3') 
+# 's3' is a key word. create connection to S3 using default config and all buckets within S3
+
+obj = s3.get_object(Bucket= bucket, Key= file_name) 
+# get object and file (key) from bucket
+
+initial_df = pd.read_csv(obj['Body']) # 'Body' is a key word
+
 def lambda_metodo(event, context):
+
+    # A APAGAR DEPOIS DO BOTO
+    list_cpf = []
+    
     validation=True
     validation_list =[]
     validation_rule = 'Todas as regras ok'
     validation_rule_list=[]
-    cpf_df=pd.DataFrame({'cpf':[],'Regra_de_validacao':[],'validado':[]})
-    for cpf in list_cpf :
-  # Verifica a formatação do CPF
+    cpf_df= pd.DataFrame({'cpf':[],'Regra_de_validacao':[],'validado':[]})
+    for cpf in list_cpf:
+        # Verifica a formatação do CPF
         if not re.match(r'\d{3}\.\d{3}\.\d{3}-\d{2}', cpf):
             validation=False
             validation_rule = 'Formato incorreto'
 
-    # Obtém apenas os números do CPF, ignorando pontuações
+        # Obtém apenas os números do CPF, ignorando pontuações
         numbers = [int(digit) for digit in cpf if digit.isdigit()]
 
     # Verifica se o CPF possui 11 números ou se todos são iguais:
@@ -36,8 +54,8 @@ def lambda_metodo(event, context):
         validation_list.append(validation)
         validation_rule_list.append(validation_rule)
 
-    cpf_df['cpf'] =list_cpf
+    cpf_df['cpf'] = list_cpf
     cpf_df['validado'] = validation_list
     cpf_df['Regra_de_validacao'] = validation_rule
-    #return cpf_df
+    return cpf_df
 

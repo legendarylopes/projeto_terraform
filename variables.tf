@@ -48,6 +48,6 @@ variable "subnet_count" {
 
 variable "bucket_user" {
   type = string
-  default = "jonatas"
+  default = "jonatas3"
   description = "Coloque seu nome para testar o terraform na sua conta"
 }

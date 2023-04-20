@@ -7,13 +7,12 @@ terraform {
 }
 
 provider "aws" {
-  profile = "default" # Aqui vai o "profile" que você configurou as credenciais da AWS.
   region  = "us-east-1"
 }
 ###################################################################### Bucket ####################################################################################
 
 resource "aws_s3_bucket" "b" {
-  bucket = "data-fileS3-projeto-${var.bucket_user}"
+  bucket = "data-file-s3-projeto-${var.bucket_user}"
   force_destroy = var.force_destroy
 
   tags = {
