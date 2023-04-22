@@ -149,10 +149,10 @@ resource "aws_iam_role_policy_attachment" "function_lambda_policy_attachment" {
   policy_arn = aws_iam_policy.function_lambda_policy.arn
 }
 
-# Zipar 1 arquivo .py para subir no lambda
+# Zipar n pasta com arquivo py e dependencias se houver para subir no lambda
 data "archive_file" "lambda" {
   type        = "zip"
-  source_file = "lambda_function.py" 
+  source_dir = "Lambda/" 
   output_path = "lambda_function_payload.zip"
 }
 # Subindo o arquivo zip na lambda
@@ -164,6 +164,10 @@ resource "aws_lambda_function" "lambda_func" {
 
   source_code_hash = "${data.archive_file.lambda.output_base64sha256}"
   runtime = var.versao_python
+  #  vpc_config {
+  #    subnet_ids = [aws_subnet.private-subnet[0].id, aws_subnet.private-subnet[1].id]
+  #    security_group_ids = aws_vpc.dev-vpc.id
+  #}
 }
 
 # Permitir nitificações entre s3 e lambda
