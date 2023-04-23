@@ -201,3 +201,37 @@ resource "aws_lambda_permission" "invoke_function" {
   source_arn    = "arn:aws:s3:::${aws_s3_bucket.b.id}"
 }
 
+###############################################################################  RDS ##############################################################################################################
+
+# Cria uma instância de RDS
+resource "aws_db_instance" "mysql" {
+  # OPERADOR TERNÁRIO
+  # VARIAVEL_comparacao ? caso verdadeiro : caso falso
+  # vamos supor que i = 3
+  # i > 2 ? print(i é maior que 2) : print(i é menor que 2) 
+  # i > 2 ? print(i é maior que 2) : i < 5 ? print(i é menor que 5) : i < 4 ?   
+  # if i > 2:
+  #  print(i é maior que 2)
+  #  else:
+  #   print(i é menor que 2)
+
+  allocated_storage =  10 # Espaço em disco em GB!
+  identifier        = "dbprojeto"
+  db_name           = "db_postgress"
+  engine            = "postgres"
+  engine_version    = "12.9"
+  instance_class    = "db.t2.micro"
+  username          = "user123" # Nome do usuário "master"
+  password          = "pass123" # Senha do usuário master
+  port              = 5432
+  # Parâmetro que indica se o DB vai ser acessível publicamente ou não.
+  # Se quiser adicionar isso, preciso de um internet gateway na minha subnet. Em outras palavras, preciso permitir acesso "de fora" da aws.
+  # publicly_accessible    = true
+
+  # Parâmetro que indica se queremos ter um cluster RDS que seja multi az. 
+  # Lembrando, paga-se a mais por isso, mas para ambientes produtivos é essencial.
+  # multi_az               = true
+  skip_final_snapshot    = true
+  db_subnet_group_name   = aws_db_subnet_group.db-subnet.name
+  vpc_security_group_ids = [aws_security_group.allow_db.id]
+}
