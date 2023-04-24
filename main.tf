@@ -31,6 +31,31 @@ resource "aws_vpc" "dev-vpc" {
   }
 }
 
+resource "aws_iam_role_policy_attachment" "AWSLambdaVPCAccessExecutionRole" {
+    role       = aws_iam_role.iam_for_lambda.name
+    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_security_group" "demosg" {
+  name        = "demosg"
+  description = "Demo security group for AWS lambda and AWS RDS connection"
+  vpc_id      = aws_vpc.dev-vpc.id
+  # ingress {
+  #   from_port       = 0
+  #   to_port         = 0
+  #   protocol        = "-1"
+  #   cidr_blocks     = ["127.0.0.1/32"]
+  #   self = true
+  # }
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
+  }
+}
+
 # Cria uma subnet que pertence àquela rede privada 
 resource "aws_subnet" "private-subnet" {
   count             = var.subnet_count
@@ -62,13 +87,13 @@ ingress {
     protocol    = "tcp"
     cidr_blocks = [aws_vpc.dev-vpc.cidr_block] # aws_vpc.dev-vpc.cidr_blocks
   }
-  egress {
-    description = "HTTPS"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # aws_vpc.dev-vpc.cidr_blocks
-  }
+  # egress {
+  #   description = "HTTPS"
+  #   from_port   = 5432
+  #   to_port     = 5432
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"] # aws_vpc.dev-vpc.cidr_blocks
+  # }
 
   tags = {
     Name = "DE-OP-009"
@@ -115,7 +140,7 @@ resource "aws_iam_policy" "function_logging_policy" {
   })
 }
 
-# Permissão para leitura do bucket
+# Permissão para leitura do bucket e acessos para VPC
 resource "aws_iam_policy" "function_lambda_policy" {
   name = "function_lambda_policy"
 
@@ -126,7 +151,12 @@ resource "aws_iam_policy" "function_lambda_policy" {
         Action   = [
           "s3:GetObject",
           "s3:ListBucket"
-        ]
+          # "ec2:CreateNetworkInterface",
+          # "ec2:DescribeNetworkInterfaces",
+          # "ec2:DeleteNetworkInterface",
+          # "ec2:AssignPrivateIpAddresses",
+          # "ec2:UnassignPrivateIpAddresses"       
+          ]
         Effect   = "Allow"
         Resource = [
           "${aws_s3_bucket.b.arn}",
@@ -164,10 +194,11 @@ resource "aws_lambda_function" "lambda_func" {
 
   source_code_hash = "${data.archive_file.lambda.output_base64sha256}"
   runtime = var.versao_python
-  #  vpc_config {
-  #    subnet_ids = [aws_subnet.private-subnet[0].id, aws_subnet.private-subnet[1].id]
-  #    security_group_ids = aws_vpc.dev-vpc.id
-  #}
+   vpc_config {
+     subnet_ids = [aws_subnet.private-subnet[0].id, aws_subnet.private-subnet[1].id]
+    #  dúvida
+     security_group_ids = [aws_security_group.demosg.id] 
+  }
 }
 
 # Permitir nitificações entre s3 e lambda
@@ -205,15 +236,6 @@ resource "aws_lambda_permission" "invoke_function" {
 
 # Cria uma instância de RDS
 resource "aws_db_instance" "mysql" {
-  # OPERADOR TERNÁRIO
-  # VARIAVEL_comparacao ? caso verdadeiro : caso falso
-  # vamos supor que i = 3
-  # i > 2 ? print(i é maior que 2) : print(i é menor que 2) 
-  # i > 2 ? print(i é maior que 2) : i < 5 ? print(i é menor que 5) : i < 4 ?   
-  # if i > 2:
-  #  print(i é maior que 2)
-  #  else:
-  #   print(i é menor que 2)
 
   allocated_storage =  10 # Espaço em disco em GB!
   identifier        = "dbprojeto"
@@ -221,8 +243,8 @@ resource "aws_db_instance" "mysql" {
   engine            = "postgres"
   engine_version    = "12.9"
   instance_class    = "db.t2.micro"
-  username          = "user123" # Nome do usuário "master"
-  password          = "pass123" # Senha do usuário master
+  username          = "user123user123" # Nome do usuário "master"
+  password          = "pass123pass123" # Senha do usuário master
   port              = 5432
   # Parâmetro que indica se o DB vai ser acessível publicamente ou não.
   # Se quiser adicionar isso, preciso de um internet gateway na minha subnet. Em outras palavras, preciso permitir acesso "de fora" da aws.
@@ -233,5 +255,5 @@ resource "aws_db_instance" "mysql" {
   # multi_az               = true
   skip_final_snapshot    = true
   db_subnet_group_name   = aws_db_subnet_group.db-subnet.name
-  vpc_security_group_ids = [aws_security_group.allow_db.id]
+  vpc_security_group_ids = [aws_security_group.demosg.id, aws_security_group.allow_db.id]
 }

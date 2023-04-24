@@ -1,14 +1,26 @@
-#import pandas as pd
+import psycopg2
 import re
 import boto3
 import csv
 
-
 def lambda_metodo(event, context):
+    # establishing the connection
+    conn = psycopg2.connect(
+        database="postgres", 
+        user='user123user123', 
+        password='pass123pass123', 
+        host='dbprojeto.ccbvkpoefirj.us-east-1.rds.amazonaws.com', 
+        port='5432'
+        )
+    # Creating a cursor object using the cursor() method
+    cursor = conn.cursor()
+    # Executing an MYSQL function using the execute() method
+    cursor.execute("CREATE TABLE TB_CPF(VALOR_CPF VARCHAR(14) NOT NULL, IS_VALID BOOLEAN NOT NULL, VALIDATION VARCHAR(50) NOT NULL);")
+
     validation=True
-    validation_list =[]
+    # validation_list =[]
     validation_rule = 'Todas as regras ok'
-    validation_rule_list=[]
+    # validation_rule_list=[]
     bucket = "data-file-s3-projeto-grupo2"
     file_name = "arquivo.csv"
 
@@ -44,13 +56,13 @@ def lambda_metodo(event, context):
             validation=False
             validation_rule = 'segundo dígito verificador inválido'
             
-        validation_list.append(validation)
-        validation_rule_list.append(validation_rule)
+        # validation_list.append(validation)
+        # validation_rule_list.append(validation_rule)
         
+        insert_values = f"{cpf},{validation},{validation_rule}"
         
+        cursor.execute(f"INSERT INTO TB_CPF VALUES ({insert_values});")
         
         print(cpf[0])
 
 
-
-#initial_df = pd.read_csv(obj['Body']) # 'Body' is a key word
