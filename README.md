@@ -14,6 +14,7 @@ Esta startup chamada de D-Tech possui uma aplicação do tipo monolito em Java, 
 - Um Bucket S3;
 - Uma Lambda Function com trigger de bucket S3;
 - Um banco de dados RDS para armazenar os dados provenientes do arquivo que é adicionado ao bucket S3.
+
   ![stack-script](./images/stack_script.png)
 
 Essa aplicação é responsável por fazer upload de um arquivo para um bucket S3 para ser analisado, formatado e tratado por uma pipeline de análise e processamento de dados.
