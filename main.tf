@@ -40,14 +40,6 @@ resource "aws_security_group" "demosg" {
   name        = "demosg"
   description = "Demo security group for AWS lambda and AWS RDS connection"
   vpc_id      = aws_vpc.dev-vpc.id
-  # ingress {
-  #   from_port       = 0
-  #   to_port         = 0
-  #   protocol        = "-1"
-  #   cidr_blocks     = ["127.0.0.1/32"]
-  #   self = true
-  # }
-
   egress {
     from_port       = 0
     to_port         = 0
@@ -81,19 +73,15 @@ resource "aws_security_group" "allow_db" {
   vpc_id      = aws_vpc.dev-vpc.id
 
 ingress {
-    description = "Porta de conexao ao Postgres"
-    from_port   = 5432
-    to_port     = 5432
+    description = "Porta de conexao ao banco de dados"
+    # from_port   = 5432 # postgres
+    from_port   = 3306 # mysql
+    # to_port     = 5432 # postgres
+    to_port     = 3306 # mysql
     protocol    = "tcp"
+    # cidr_blocks = ["0.0.0.0/0"] # aws_vpc.dev-vpc.cidr_blocks
     cidr_blocks = [aws_vpc.dev-vpc.cidr_block] # aws_vpc.dev-vpc.cidr_blocks
   }
-  # egress {
-  #   description = "HTTPS"
-  #   from_port   = 5432
-  #   to_port     = 5432
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["0.0.0.0/0"] # aws_vpc.dev-vpc.cidr_blocks
-  # }
 
   tags = {
     Name = "DE-OP-009"
@@ -150,12 +138,7 @@ resource "aws_iam_policy" "function_lambda_policy" {
       {
         Action   = [
           "s3:GetObject",
-          "s3:ListBucket"
-          # "ec2:CreateNetworkInterface",
-          # "ec2:DescribeNetworkInterfaces",
-          # "ec2:DeleteNetworkInterface",
-          # "ec2:AssignPrivateIpAddresses",
-          # "ec2:UnassignPrivateIpAddresses"       
+          "s3:ListBucket"     
           ]
         Effect   = "Allow"
         Resource = [
@@ -196,7 +179,6 @@ resource "aws_lambda_function" "lambda_func" {
   runtime = var.versao_python
    vpc_config {
      subnet_ids = [aws_subnet.private-subnet[0].id, aws_subnet.private-subnet[1].id]
-    #  dúvida
      security_group_ids = [aws_security_group.demosg.id] 
   }
 }
@@ -208,9 +190,6 @@ resource "aws_s3_bucket_notification" "aws_lambda_trigger" {
     lambda_function_arn = aws_lambda_function.lambda_func.arn
     events              = var.eventos_lambda_s3
   }
-
-  # O depends_on aqui garante que esse recurso "aws_s3_bucket_notification" 
-  # só será criado APÓS  "aws_lambda_permission" "invoke_function", que é um "pré requisito"
   depends_on = [aws_lambda_permission.invoke_function] 
 }
 
@@ -234,25 +213,18 @@ resource "aws_lambda_permission" "invoke_function" {
 
 ###############################################################################  RDS ##############################################################################################################
 
-# Cria uma instância de RDS
 resource "aws_db_instance" "mysql" {
 
   allocated_storage =  10 # Espaço em disco em GB!
   identifier        = "dbprojeto"
-  db_name           = "db_postgress"
-  engine            = "postgres"
-  engine_version    = "12.9"
+  db_name           = "db_sql"
+  engine            = "mysql"
+  engine_version    = "5.7"
   instance_class    = "db.t2.micro"
-  username          = "user123user123" # Nome do usuário "master"
-  password          = "pass123pass123" # Senha do usuário master
-  port              = 5432
-  # Parâmetro que indica se o DB vai ser acessível publicamente ou não.
-  # Se quiser adicionar isso, preciso de um internet gateway na minha subnet. Em outras palavras, preciso permitir acesso "de fora" da aws.
-  # publicly_accessible    = true
-
-  # Parâmetro que indica se queremos ter um cluster RDS que seja multi az. 
-  # Lembrando, paga-se a mais por isso, mas para ambientes produtivos é essencial.
-  # multi_az               = true
+  username          = "your_user" # Nome do usuário "master"
+  password          = "your_passaword" # Senha do usuário master
+  parameter_group_name = "default.mysql5.7"
+  port              = 3306
   skip_final_snapshot    = true
   db_subnet_group_name   = aws_db_subnet_group.db-subnet.name
   vpc_security_group_ids = [aws_security_group.demosg.id, aws_security_group.allow_db.id]

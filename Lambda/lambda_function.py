@@ -1,21 +1,30 @@
-import psycopg2
+# import psycopg2
+import mysql.connector
 import re
 import boto3
 import csv
 
 def lambda_metodo(event, context):
+
     # establishing the connection
-    conn = psycopg2.connect(
-        database="postgres", 
+    conn = mysql.connector.connect(
+        database='db_sql', 
         user='user123user123', 
         password='pass123pass123', 
-        host='dbprojeto.ccbvkpoefirj.us-east-1.rds.amazonaws.com', 
-        port='5432'
+        host='dbprojeto.ccbvkpoefirj.us-east-1.rds.amazonaws.com' 
+        # port='3306'
         )
     # Creating a cursor object using the cursor() method
-    cursor = conn.cursor()
-    # Executing an MYSQL function using the execute() method
-    cursor.execute("CREATE TABLE TB_CPF(VALOR_CPF VARCHAR(14) NOT NULL, IS_VALID BOOLEAN NOT NULL, VALIDATION VARCHAR(50) NOT NULL);")
+    # cursor = conn.cursor()
+
+    with conn.cursor() as cursor:
+        cursor.execute("CREATE TABLE IF NOT EXISTS TB_CPF(VALOR_CPF VARCHAR(14) NOT NULL, IS_VALID BOOLEAN NOT NULL, VALIDATION VARCHAR(50) NOT NULL);")
+        conn.commit()
+  
+    # cursor.execute("SHOW TABLES LIKE 'TB_CPF'")
+    # result = cursor.fetchone()
+    # if not result:
+    #     cursor.execute("CREATE TABLE TB_CPF(VALOR_CPF VARCHAR(14) NOT NULL, IS_VALID BOOLEAN NOT NULL, VALIDATION VARCHAR(50) NOT NULL);")
 
     validation=True
     # validation_list =[]
@@ -32,6 +41,7 @@ def lambda_metodo(event, context):
     records = csv.reader(data)
     headers = next(records)
     for cpf in records:
+        print("CPF:", cpf)
         if not re.match(r'\d{3}\.\d{3}\.\d{3}-\d{2}', cpf[0]):
             validation=False
             validation_rule = 'Formato incorreto'
@@ -54,15 +64,15 @@ def lambda_metodo(event, context):
         expected_digit = (sum_of_products * 10 % 11) % 10
         if numbers[10] != expected_digit:
             validation=False
-            validation_rule = 'segundo dígito verificador inválido'
+            validation_rule = 'Segundo dígito verificador inválido'
             
         # validation_list.append(validation)
         # validation_rule_list.append(validation_rule)
+        print("validation:",validation)
+        print("validation_rule:",validation_rule)
         
-        insert_values = f"{cpf},{validation},{validation_rule}"
-        
-        cursor.execute(f"INSERT INTO TB_CPF VALUES ({insert_values});")
-        
-        print(cpf[0])
+        with conn.cursor() as cursor:
+            cursor.execute(f"INSERT INTO TB_CPF VALUES ({cpf},{validation},{validation_rule});")
+            conn.commit()
 
 

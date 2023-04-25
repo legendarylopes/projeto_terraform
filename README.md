@@ -6,8 +6,13 @@
 
 # Objetivo
 
-Esse repositório tem como objetivo implementar um script em Terraform capaz de criar uma pipeline de análise e processamento de dados.
-Esta startup chamada de D-Tech possui uma aplicação do tipo monolito em Java, com backend e frontend que é executada em 1 máquina virtual. Essa aplicação é responsável por fazer upload de um arquivo para um bucket S3 para ser analisado, formatado e tratado por uma pipeline de análise e processamento de dados.
+Criar uma aplicação simples que:
+
+- Verifica a estrutura correta do CPF
+- Valida os dados 
+- Aponta onde está o possível erro no dado
+
+O script deste projeto cria uma pipeline de análise e processamento de dados e armazena os dados em um repositório RDS para consulta.
 
 # O que é criado pelo script
 
@@ -17,14 +22,14 @@ Esta startup chamada de D-Tech possui uma aplicação do tipo monolito em Java, 
 
   ![stack-script](./images/stack_script.png)
 
-Essa aplicação é responsável por fazer upload de um arquivo para um bucket S3 para ser analisado, formatado e tratado por uma pipeline de análise e processamento de dados.
+# Como executar o script
 
-# Como correr o script
+Dentro da pasta onde baixar os arquivos deste projeto, criar uma pasta chamada "Lambda" e baixar o pacote de instalação da biblioteca MySQL. Para isso, executar o comando via Terminal: 
+  ```pip install --target /Lambda -r requirements.txt```
 
 Existe na raiz do projeto um script chamado `main.tf`, basta acessar o diretorio via prompt e executar os comandos terraform:
-
-- terraform init
-- terraform plan
-- terraform apply
+  - terraform init
+  - terraform plan
+  - terraform apply
 
 Para destruir toda a infraestrutura, basta executar `terraform destroy`
