@@ -9,11 +9,12 @@ def lambda_metodo(event, context):
     # establishing the connection
     conn = mysql.connector.connect(
         database='db_sql', 
-        user='user123user123', 
-        password='pass123pass123', 
-        host='dbprojeto.ccbvkpoefirj.us-east-1.rds.amazonaws.com' 
-        # port='3306'
+        user='your_user', 
+        password='your_password', 
+        host='dbprojeto.ccbvkpoefirj.us-east-1.rds.amazonaws.com', 
+        port='3306'
         )
+    
     # Creating a cursor object using the cursor() method
     # cursor = conn.cursor()
 

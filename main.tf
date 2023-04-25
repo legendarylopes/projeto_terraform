@@ -41,10 +41,10 @@ resource "aws_security_group" "demosg" {
   description = "Demo security group for AWS lambda and AWS RDS connection"
   vpc_id      = aws_vpc.dev-vpc.id
   egress {
-    from_port       = 0
-    to_port         = 0
-    protocol        = "-1"
-    cidr_blocks     = ["0.0.0.0/0"]
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    cidr_blocks     = [aws_vpc.dev-vpc.cidr_block]
   }
 }
 
@@ -74,12 +74,9 @@ resource "aws_security_group" "allow_db" {
 
 ingress {
     description = "Porta de conexao ao banco de dados"
-    # from_port   = 5432 # postgres
     from_port   = 3306 # mysql
-    # to_port     = 5432 # postgres
     to_port     = 3306 # mysql
     protocol    = "tcp"
-    # cidr_blocks = ["0.0.0.0/0"] # aws_vpc.dev-vpc.cidr_blocks
     cidr_blocks = [aws_vpc.dev-vpc.cidr_block] # aws_vpc.dev-vpc.cidr_blocks
   }
 
@@ -222,7 +219,7 @@ resource "aws_db_instance" "mysql" {
   engine_version    = "5.7"
   instance_class    = "db.t2.micro"
   username          = "your_user" # Nome do usuário "master"
-  password          = "your_passaword" # Senha do usuário master
+  password          = "your_password" # Senha do usuário master
   parameter_group_name = "default.mysql5.7"
   port              = 3306
   skip_final_snapshot    = true
